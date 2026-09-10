@@ -1,6 +1,8 @@
 /* Watch Later queue state + localStorage persistence in one hook.
-   Saved entries survive a refresh; duplicate ids are replaced in place and
-   the most recently saved entry floats to the top, mirroring YouTube. */
+
+   Saved entries survive a refresh. Each video id can appear only once,
+   and save/remove actions update the persisted queue immediately.
+*/
 
 import { useCallback, useMemo, useState } from 'react'
 import {
