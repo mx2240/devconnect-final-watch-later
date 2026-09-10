@@ -1,11 +1,13 @@
 /* Local persistence for the Watch Later queue.
 
-   The queue is stored as JSON under a single key in localStorage. Every read
-   and write is guarded so a blocked or missing storage (private mode, quota,
-   disabled cookies) degrades to an in-memory queue instead of crashing. */
+   The queue is kept in localStorage under a fixed key as an array of JSON
+   records. Every read/write is guarded: if storage is blocked, disabled,
+   full, or simply absent, the app degrades to an in-memory queue instead of
+   throwing. The API mirrors the object shape used by the video feed. */
 
-const STORAGE_KEY = 'watch-later:v1'
-const ALLOWED_FIELDS = [
+export const STORAGE_KEY = 'watch-later:v1'
+
+const ALLOWED_KEYS = [
   'id',
   'title',
   'description',
@@ -16,7 +18,7 @@ const ALLOWED_FIELDS = [
   'url',
 ]
 
-export function storageAvailable() {
+export function isStorageUsable() {
   try {
     const probe = '__watch_later_probe__'
     window.localStorage.setItem(probe, probe)
@@ -28,31 +30,18 @@ export function storageAvailable() {
 }
 
 function normalizeStored(entry) {
-  if (!entry || typeof entry !== 'object') return null
-  return {
-    id: String(entry.id || ''),
-    title: String(entry.title || 'Untitled video'),
-    description: String(entry.description || ''),
-    thumbnail: String(entry.thumbnail || ''),
-    channel: String(entry.channel || 'Wikimedia Commons'),
-    publishedAt: String(entry.publishedAt || ''),
-    duration: Math.max(0, Number(entry.duration) || 0),
-    url: String(entry.url || ''),
-  }
-}
-
-function keepOnlyAllowed(video) {
-  if (!video) return null
-  const record = {}
-  for (const field of ALLOWED_FIELDS) {
-    if (video[field] !== undefined) record[field] = video[field]
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null
+  const record = { id: String(entry.id || '') }
+  if (!record.id) return null
+  for (const key of ALLOWED_KEYS) {
+    if (key === 'id') continue
+    if (entry[key] !== undefined) record[key] = entry[key]
   }
   return record
 }
 
-/* Load the saved queue as a normalized array (deduped, discarded junk removed). */
 export function loadSavedVideos() {
-  if (!storageAvailable()) return []
+  if (!isStorageUsable()) return []
   let raw
   try {
     raw = window.localStorage.getItem(STORAGE_KEY)
@@ -70,21 +59,20 @@ export function loadSavedVideos() {
   if (!Array.isArray(parsed)) return []
 
   const seen = new Set()
-  const videos = []
-  for (const entry of parsed) {
-    const video = normalizeStored(keepOnlyAllowed(entry))
-    if (!video || !video.id || seen.has(video.id)) continue
-    seen.add(video.id)
-    videos.push(video)
-  }
-  return videos
+  return parsed
+    .map(normalizeStored)
+    .filter(Boolean)
+    .filter((video) => {
+      if (seen.has(video.id)) return false
+      seen.add(video.id)
+      return true
+    })
 }
 
-/* Persist the queue. Returns true on success, false when storage is unusable. */
 export function saveSavedVideos(videos) {
-  if (!storageAvailable()) return false
+  if (!isStorageUsable()) return false
   const clean = Array.isArray(videos)
-    ? videos.map(keepOnlyAllowed).filter(Boolean)
+    ? videos.map(normalizeStored).filter(Boolean)
     : []
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clean))
@@ -94,29 +82,16 @@ export function saveSavedVideos(videos) {
   }
 }
 
-/* Add one video to the front of the queue. Returns the (normalized) id. */
-export function addSavedVideo(video, queue = loadSavedVideos()) {
-  const record = normalizeStored(keepOnlyAllowed(video))
-  if (!record || !record.id) return ''
-  const without = queue.filter((entry) => entry.id !== record.id)
-  const next = [record, ...without]
+export function addSavedVideo(video, current = loadSavedVideos()) {
+  const record = normalizeStored(video)
+  if (!record || current.some((entry) => entry.id === record.id)) return current
+  const next = [record, ...current]
   saveSavedVideos(next)
-  return record.id
+  return next
 }
 
-/* Remove a video from the queue by id. Returns true if something was removed. */
-export function removeSavedVideo(id, queue = loadSavedVideos()) {
-  const before = queue.length
-  const next = queue.filter((entry) => entry.id !== id)
+export function removeSavedVideo(id, current = loadSavedVideos()) {
+  const next = current.filter((entry) => entry.id !== id)
   saveSavedVideos(next)
-  return next.length !== before
-}
-
-export default {
-  STORAGE_KEY,
-  storageAvailable,
-  loadSavedVideos,
-  saveSavedVideos,
-  addSavedVideo,
-  removeSavedVideo,
+  return next
 }

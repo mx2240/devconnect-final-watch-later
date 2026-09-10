@@ -1,4 +1,9 @@
-/* Presentational helpers shared across cards, chips, and the queue. */
+/* Presentational helpers shared by cards, badges and queues.
+
+   `formatDuration` renders a plain seconds value as a clock string (1:23,
+   1:02:03); `formatPublishedAt` turns an ISO timestamp into a friendly date
+   ("12 Jun 2020" style); `videoMetaText` stitches together the small line
+   shown under each video title. */
 
 export function formatDuration(totalSeconds) {
   const seconds = Math.max(0, Math.round(Number(totalSeconds) || 0))
@@ -18,16 +23,15 @@ export function formatPublishedAt(isoString) {
   if (!isoString) return ''
   const date = new Date(isoString)
   if (Number.isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
+  return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
+    month: 'short',
+    year: 'numeric',
   }).format(date)
 }
 
-/* Short "meta strip" for a browse card: published date + play length. */
 export function videoMetaText(video) {
-  const date = formatPublishedAt(video && video.publishedAt)
+  const published = formatPublishedAt(video && video.publishedAt)
   const duration = formatDuration(video && video.duration)
-  return [date, duration].filter(Boolean).join(' · ')
+  return [published, duration].filter(Boolean).join(' · ')
 }

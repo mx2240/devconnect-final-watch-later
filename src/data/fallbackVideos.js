@@ -1,7 +1,7 @@
-/* Built-in sample catalog, used when the live Wikimedia Commons feed is
-   unreachable (offline / network failure) or when an error is simulated.
-   These records point at real, well-known files on Wikimedia Commons so the
-   thumbnails still load whenever the network is available. */
+/* Bundled sample catalog, used whenever the live Wikimedia Commons feed is
+   unreachable (offline, network failure, blocked origin) or when a demo error
+   is simulated. Each record is backed by a real, well-known video file on
+   Wikimedia Commons so thumbnails still load whenever the network exists. */
 
 const thumb = (base) =>
   `https://commons.wikimedia.org/wiki/Special:FilePath/${base}?width=480`
@@ -25,7 +25,7 @@ export const FALLBACK_VIDEOS = [
     id: 'sample-002',
     title: 'Falkirk Wheel Timelapse, Scotland - Diliff',
     description:
-      'A timelapse of the Falkirk Wheel boat lift in Scotland — a Wikimedia Commons sample video.',
+      'A timelapse video of the Falkirk Wheel boat lift in Scotland — a Wikimedia Commons sample video.',
     thumbnail: thumb('Falkirk_Wheel_Timelapse%2C_Scotland_-_Diliff.webm'),
     channel: 'Diliff',
     publishedAt: '2014-07-02T11:58:16Z',
@@ -94,7 +94,7 @@ export const FALLBACK_VIDEOS = [
       'Harold Lloyd dangles from a skyscraper clock in this silent classic — a Wikimedia Commons sample video.',
     thumbnail: thumb('Safety_Last_%281923%29.webm'),
     channel: 'Racconish',
-    publishedAt: '2020-01-11T21:00:23Z',
+    publishedAt: '2019-01-11T21:00:23Z',
     duration: 4362,
     url: file('Safety_Last_%281923%29.webm'),
   },
@@ -102,7 +102,7 @@ export const FALLBACK_VIDEOS = [
     id: 'sample-009',
     title: 'Le Voyage dans la lune (black and white, 1902)',
     description:
-      "Georges Méliès’ landmark silent film A Trip to the Moon — a Wikimedia Commons sample video.",
+      'Georges Méliès’ landmark silent film A Trip to the Moon — a Wikimedia Commons sample video.',
     thumbnail: thumb('Le_Voyage_dans_la_lune_%28black_and_white%2C_1902%29.webm'),
     channel: 'Racconish',
     publishedAt: '2019-05-22T16:15:02Z',
@@ -113,7 +113,7 @@ export const FALLBACK_VIDEOS = [
     id: 'sample-010',
     title: 'Draining the Oceans video by NASA',
     description:
-      'A NASA visualization of the world’s coasts with the oceans drained — a Wikimedia Commons sample video.',
+      'A NASA visualization of what the world’s coasts would look like with the oceans drained — a Wikimedia Commons sample video.',
     thumbnail: thumb('Draining_the_Oceans_video_by_NASA.webm'),
     channel: 'Eatcha',
     publishedAt: '2020-02-18T18:10:37Z',
@@ -166,13 +166,13 @@ export const FALLBACK_VIDEOS = [
   },
   {
     id: 'sample-015',
-    title: 'View of the Colosseum, Rome (1914)',
+    title: 'The Genina: view of the Colosseum, Rome',
     description:
       'Historic early film footage of Rome’s Colosseum — a Wikimedia Commons sample video.',
-    thumbnail: thumb('View_of_the_Colosseum%2C_Rome%2C_1914.webm'),
+    thumbnail: thumb('The_Genina_-_view_of_the_Colosseum%2C_Rome%2C_1914.webm'),
     channel: 'Racconish',
     publishedAt: '2019-08-02T11:40:10Z',
     duration: 668,
-    url: file('View_of_the_Colosseum%2C_Rome%2C_1914.webm'),
+    url: file('The_Genina_-_view_of_the_Colosseum%2C_Rome%2C_1914.webm'),
   },
 ]

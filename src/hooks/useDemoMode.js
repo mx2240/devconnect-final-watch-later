@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
+/* The four storyable states plus the default. Order matters for the demo
+   control strip, not for behaviour. */
 const MODES = ['normal', 'loading', 'error', 'empty']
 
 function readModeFromUrl() {
@@ -14,7 +16,8 @@ function readModeFromUrl() {
 
 /* Central demo-mode state. The mode is kept in sync with the URL via
    history.replaceState so each state has a stable, shareable URL
-   (e.g. ?demo=loading). */
+   (e.g. ?demo=loading), and the back/forward buttons stay in sync through
+   the popstate listener. */
 export function useDemoMode() {
   const [mode, setMode] = useState(readModeFromUrl)
 
@@ -25,15 +28,15 @@ export function useDemoMode() {
   }, [])
 
   const changeMode = useCallback((next) => {
-    const mode = MODES.includes(next) ? next : 'normal'
-    setMode(mode)
+    const target = MODES.includes(next) ? next : 'normal'
+    setMode(target)
     try {
       const url = new URL(window.location.href)
-      if (mode === 'normal') url.searchParams.delete('demo')
-      else url.searchParams.set('demo', mode)
+      if (target === 'normal') url.searchParams.delete('demo')
+      else url.searchParams.set('demo', target)
       window.history.replaceState({}, '', url)
     } catch {
-      /* URL update is best-effort */
+      /* URL updates are best-effort; the in-memory mode is authoritative */
     }
   }, [])
 

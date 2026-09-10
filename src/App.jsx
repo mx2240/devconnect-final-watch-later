@@ -1,122 +1,129 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useCallback, useMemo, useState } from 'react'
 import './App.css'
+import Header from './components/Header.jsx'
+import SearchBar from './components/SearchBar.jsx'
+import VideoGrid from './components/VideoGrid.jsx'
+import WatchLater from './components/WatchLater.jsx'
+import EmptyState from './components/EmptyState.jsx'
+import LoadingState from './components/LoadingState.jsx'
+import ErrorState from './components/ErrorState.jsx'
+import DemoStateControls from './components/DemoStateControls.jsx'
+import { useVideos } from './hooks/useVideos.js'
+import { useWatchLater } from './hooks/useWatchLater.js'
+import { useDemoMode } from './hooks/useDemoMode.js'
+import { searchVideos } from './lib/search.js'
+import { videoMetaText } from './lib/format.js'
 
-function App() {
-    const [count, setCount] = useState(0)
+/* App wires the three feature areas together:
+     1. Discovery  — a live feed from Wikimedia Commons with search + states
+     2. Watch Later — a persistent queue (localStorage) with focus management
+     3. Demo toolbar — reach every UI state (normal/loading/error/empty) with
+        a stable, shareable URL via ?demo=… */
 
-    return (
-        <>
-            <section id="center">
-                <div className="hero">
-                    <img src={heroImg} className="base" width="170" height="179" alt="" />
-                    <img src={reactLogo} className="framework" alt="React logo" />
-                    <img src={viteLogo} className="vite" alt="Vite logo" />
-                </div>
-                <div>
-                    <h1>Get started</h1>
-                    <p>
-                        Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-                    </p>
-                </div>
-                <button
-                    type="button"
-                    className="counter"
-                    onClick={() => setCount((count) => count + 1)}
-                >
-                    Count is {count}
-                </button>
-            </section>
+export default function App() {
+  const { demoMode, setDemoMode } = useDemoMode()
+  const { status, videos, errorMessage, isFallback, retry } = useVideos({
+    demoMode,
+    limit: 24,
+  })
+  const watchLater = useWatchLater()
 
-            <div className="ticks"></div>
+  const [query, setQuery] = useState('')
 
-            <section id="next-steps">
-                <div id="docs">
-                    <svg className="icon" role="presentation" aria-hidden="true">
-                        <use href="/icons.svg#documentation-icon"></use>
-                    </svg>
-                    <h2>Documentation</h2>
-                    <p>Your questions, answered</p>
-                    <ul>
-                        <li>
-                            <a href="https://vite.dev/" target="_blank">
-                                <img className="logo" src={viteLogo} alt="" />
-                                Explore Vite
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://react.dev/" target="_blank">
-                                <img className="button-icon" src={reactLogo} alt="" />
-                                Learn more
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                <div id="social">
-                    <svg className="icon" role="presentation" aria-hidden="true">
-                        <use href="/icons.svg#social-icon"></use>
-                    </svg>
-                    <h2>Connect with us</h2>
-                    <p>Join the Vite community</p>
-                    <ul>
-                        <li>
-                            <a href="https://github.com/vitejs/vite" target="_blank">
-                                <svg
-                                    className="button-icon"
-                                    role="presentation"
-                                    aria-hidden="true"
-                                >
-                                    <use href="/icons.svg#github-icon"></use>
-                                </svg>
-                                GitHub
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://chat.vite.dev/" target="_blank">
-                                <svg
-                                    className="button-icon"
-                                    role="presentation"
-                                    aria-hidden="true"
-                                >
-                                    <use href="/icons.svg#discord-icon"></use>
-                                </svg>
-                                Discord
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://x.com/vite_js" target="_blank">
-                                <svg
-                                    className="button-icon"
-                                    role="presentation"
-                                    aria-hidden="true"
-                                >
-                                    <use href="/icons.svg#x-icon"></use>
-                                </svg>
-                                X.com
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                                <svg
-                                    className="button-icon"
-                                    role="presentation"
-                                    aria-hidden="true"
-                                >
-                                    <use href="/icons.svg#bluesky-icon"></use>
-                                </svg>
-                                Bluesky
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </section>
+  const visibleVideos = useMemo(
+    () => (query.trim() ? searchVideos(videos, query) : videos),
+    [videos, query],
+  )
 
-            <div className="ticks"></div>
-            <section id="spacer"></section>
-        </>
-    )
+  const handleToggleSave = useCallback(
+    (video) => watchLater.toggle(video),
+    [watchLater],
+  )
+
+  const handleAnnounce = useCallback(
+    (message) => {
+      const node = document.getElementById('app-live-region')
+      if (node) node.textContent = message
+    },
+    [],
+  )
+
+  return (
+    <div className="app-shell">
+      <Header savedCount={watchLater.videos.length} />
+
+      <main className="app-body" id="main">
+        <section className="discovery" aria-labelledby="discovery-title">
+          <div className="discovery-head">
+            <h1 id="discovery-title">Video discovery</h1>
+            <p className="discovery-note">
+              What are you in the mood to watch later? Save anything you like,
+              and pick it up again from your Watch Later queue — on any device.
+            </p>
+          </div>
+
+          <DemoStateControls
+            mode={demoMode}
+            onChange={setDemoMode}
+            isFallback={isFallback}
+            savedCount={watchLater.videos.length}
+          />
+
+          {status === 'success' ? (
+            <SearchBar value={query} onChange={setQuery} videos={visibleVideos} />
+          ) : null}
+
+          {status === 'empty' ? (
+            <EmptyState
+              title="Nothing to watch yet"
+              message="There are no videos to show right now. Try the demo toolbar to see different states, or check your connection and load the feed again."
+            />
+          ) : null}
+
+          {status === 'loading' ? <LoadingState /> : null}
+
+          {status === 'error' ? (
+            <ErrorState
+              title="Could not load the feed"
+              message={errorMessage || 'Something went wrong while loading the feed.'}
+            >
+              <button type="button" className="btn btn-primary" onClick={retry}>
+                Try again
+              </button>
+            </ErrorState>
+          ) : null}
+
+          {status === 'success' ? (
+            <VideoGrid
+              videos={visibleVideos}
+              savedIds={watchLater.ids}
+              onToggleSave={handleToggleSave}
+              onSaveAnnounce={handleAnnounce}
+            />
+          ) : null}
+        </section>
+
+        <WatchLater
+          videos={watchLater.videos}
+          onRemove={watchLater.remove}
+          onSaveAnnounce={handleAnnounce}
+        />
+      </main>
+
+      <footer className="site-footer">
+        <p>
+          Watch Later — a focused rebuild of YouTube&apos;s “Watch Later”
+          feature. Part of the DevConnect final project.
+        </p>
+      </footer>
+
+      <div
+        id="app-live-region"
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      />
+    </div>
+  )
 }
-
-export default App
