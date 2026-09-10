@@ -1,41 +1,53 @@
-/* The Watch Later queue as a React hook. Backed by localStorage (see
-   src/lib/storage.js) so the queue survives a refresh; every mutation re-persists
-   the full list and returns the updated snapshot. */
+/* Watch Later queue state + localStorage persistence in one hook.
+   Saved entries survive a refresh; duplicate ids are replaced in place and
+   the most recently saved entry floats to the top, mirroring YouTube. */
 
-import { useCallback, useEffect, useState } from 'react'
-import { loadSavedVideos, saveSavedVideos } from '../lib/storage.js'
-import { STORAGE_KEY } from '../lib/storage.js'
+import { useCallback, useMemo, useState } from 'react'
+import {
+  loadSavedVideos,
+  saveSavedVideos,
+  addSavedVideo,
+  removeSavedVideo,
+} from '../lib/storage.js'
 
 export function useWatchLater() {
   const [videos, setVideos] = useState(() => loadSavedVideos())
 
-  /* Keep the view and the persisted copy in lockstep. Persistence failures are
-     silent here — the queue still works for the session. */
-  useEffect(() => {
-    saveSavedVideos(videos)
-  }, [videos])
+  const ids = useMemo(() => videos.map((video) => video.id), [videos])
 
-  const toggle = useCallback(
-    (video) => {
-      setVideos((current) => {
-        const isSaved = current.some((entry) => entry.id === video.id)
-        if (isSaved) return current.filter((entry) => entry.id !== video.id)
-        return [video, ...current]
-      })
-    },
-    [],
-  )
-
-  const remove = useCallback((videoId) => {
-    setVideos((current) => current.filter((entry) => entry.id !== videoId))
+  const toggle = useCallback((video) => {
+    setVideos((current) => {
+      const exists = current.some((entry) => entry.id === video.id)
+      if (exists) {
+        const next = current.filter((entry) => entry.id !== video.id)
+        saveSavedVideos(next)
+        return next
+      }
+      const next = addSavedVideo(video, current)
+      saveSavedVideos(next)
+      return next
+    })
   }, [])
 
-  const clear = useCallback(() => setVideos([]), [])
+  const remove = useCallback((id) => {
+    setVideos((current) => {
+      const next = current.filter((entry) => entry.id !== id)
+      saveSavedVideos(next)
+      return next
+    })
+  }, [])
+
+  const clear = useCallback(() => {
+    setVideos([])
+    saveSavedVideos([])
+  }, [])
 
   const isSaved = useCallback(
-    (videoId) => videos.some((video) => video.id === videoId),
-    [videos],
+    (id) => ids.includes(id),
+    [ids],
   )
 
-  return { videos, toggle, remove, clear, isSaved, count: videos.length }
+  const count = videos.length
+
+  return { videos, ids, count, isSaved, toggle, remove, clear }
 }
