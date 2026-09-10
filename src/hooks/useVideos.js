@@ -1,77 +1,55 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fetchDiscoveryVideos } from '../lib/api.js'
 import { FALLBACK_VIDEOS } from '../data/fallbackVideos.js'
 
 export const DEFAULT_LIMIT = 24
 
-function initialVideosFor(mode) {
-  if (mode === 'error' || mode === 'empty') return []
-  return FALLBACK_VIDEOS.slice(0, 6)
+function sleep(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
 }
 
 /* Discovery-feed lifecycle.
    - normal  : try the live Commons feed; on any failure fall back to the
-               bundbundled catalog and expose `isFallback: true`.
-   - loading : hold a loading state; resolve to the bundled catalog after a
-               short pause so the skeleton is actually visible.
-   - error   : simulate a failure on purpose (demo).
-   - empty   : treat success as "no results" (demo). */
+                bundled catalog and expose `isFallback: true`.
+    - loading : hold a loading state so reviewers can inspect the skeletons.
+    - error   : simulate a failure on purpose (demo).
+    - empty   : fetch normally; App applies the empty Watch Later view only. */
 
-export function useVideos(limit = DEFAULT_LIMIT) {
+export function useVideos({ demoMode = 'normal', limit = DEFAULT_LIMIT } = {}) {
   const [status, setStatus] = useState('loading')
-  const [videos, setVideos] = useState(() => initialVideosFor('normal'))
+  const [videos, setVideos] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
   const [isFallback, setIsFallback] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const mounted = useRef(true)
-
-  useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-    }
-  }, [demoMode])
 
   const get = useCallback(
-    async function getFeed() {
+    async function getFeed(signal) {
       setStatus('loading')
       setErrorMessage('')
       setIsFallback(false)
 
+      if (demoMode === 'loading') return
+
       if (demoMode === 'error') {
         await sleep(650)
-        if (!mounted.current) return
+        if (signal.aborted) return
         setStatus('error')
         setErrorMessage(
-          'The live feed is unavailable right now — here is what an unreachable feed looks like.',
+          'Something went wrong while fetching videos. Check your connection and try again.',
         )
-        return
-      }
-      if (demoMode === 'empty') {
-        await sleep(650)
-        if (!mounted.current) return
-        setStatus('success')
-        setVideos([])
-        setIsFallback(true)
-        return
-      }
-      if (demoMode === 'loading') {
-        await sleep(1400)
-        if (!mounted.current) return
-        setStatus('success')
-        setVideos(FALLBACK_VIDEOS.slice(0, 8))
-        setIsFallback(true)
         return
       }
 
       try {
-        const remote = await fetchDiscoveryVideos(limit)
-        if (!mounted.current) return
+        const remote = await fetchDiscoveryVideos(limit, { signal })
+        if (signal.aborted) return
         setVideos(remote)
         setStatus('success')
         setIsFallback(false)
       } catch (error) {
-        if (!mounted.current) return
+        if (signal.aborted) return
         setIsFallback(true)
         setVideos(FALLBACK_VIDEOS.slice(0, 8))
         setStatus('success')
@@ -84,7 +62,12 @@ export function useVideos(limit = DEFAULT_LIMIT) {
   )
 
   useEffect(() => {
-    get()
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => get(controller.signal), 0)
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
   }, [get, attempt])
 
   const retry = useCallback(() => {

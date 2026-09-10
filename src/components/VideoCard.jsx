@@ -5,8 +5,7 @@
    The button carries aria-pressed (so the state is obvious to AT users) and
    calls back with a human sentence to announce via the app's live region. */
 
-import { useEffect } from 'react'
-import { formatDuration, formatPublishedAt, videoMetaText } from '../lib/format.js'
+import { formatDuration, videoMetaText } from '../lib/format.js'
 import { ThumbIcon } from './icons.jsx'
 
 export default function VideoCard({ video, isSaved, onToggleSave, onSaveAnnounce }) {
@@ -25,7 +24,7 @@ export default function VideoCard({ video, isSaved, onToggleSave, onSaveAnnounce
     <article className="video-card" aria-labelledby={`video-title-${video.id}`}>
       <div className="video-card__media">
         {video.thumbnail ? (
-          <img src={video.thumbnail} alt="" loading="lazy" decode="async" />
+          <img src={video.thumbnail} alt={`Thumbnail for ${video.title}`} loading="lazy" decoding="async" />
         ) : (
           <span className="video-card__placeholder" aria-hidden="true">
             <ThumbIcon />

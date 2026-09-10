@@ -7,7 +7,6 @@ import {
   loadSavedVideos,
   saveSavedVideos,
   addSavedVideo,
-  removeSavedVideo,
 } from '../lib/storage.js'
 
 export function useWatchLater() {

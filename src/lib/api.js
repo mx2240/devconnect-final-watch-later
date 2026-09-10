@@ -73,11 +73,12 @@ function normalizeVideo(page) {
 
 /* Fetch a batch of archival videos. Resolves to a normalized array, or
    rejects with an ApiError when the feed is unreachable / returns junk. */
-export async function fetchDiscoveryVideos(limit = 30) {
+export async function fetchDiscoveryVideos(limit = 30, { signal } = {}) {
   let response
   try {
     response = await fetch(buildFeedUrl(limit), {
       headers: { Accept: 'application/json' },
+      signal,
     })
   } catch (error) {
     throw new ApiError('The video feed could not be reached.', { cause: error })

@@ -12,7 +12,6 @@ import { useVideos } from './hooks/useVideos.js'
 import { useWatchLater } from './hooks/useWatchLater.js'
 import { useDemoMode } from './hooks/useDemoMode.js'
 import { searchVideos } from './lib/search.js'
-import { videoMetaText } from './lib/format.js'
 
 /* App wires the three feature areas together:
      1. Discovery  — a live feed from Wikimedia Commons with search + states
@@ -27,6 +26,7 @@ export default function App() {
     limit: 24,
   })
   const watchLater = useWatchLater()
+  const savedVideos = demoMode === 'empty' ? [] : watchLater.videos
 
   const [query, setQuery] = useState('')
 
@@ -53,12 +53,12 @@ export default function App() {
       <Header savedCount={watchLater.videos.length} />
 
       <main className="app-body" id="main">
-        <section className="discovery" aria-labelledby="discovery-title">
+        <section className="discovery" id="discovery" aria-labelledby="discovery-title">
           <div className="discovery-head">
             <h1 id="discovery-title">Video discovery</h1>
             <p className="discovery-note">
               What are you in the mood to watch later? Save anything you like,
-              and pick it up again from your Watch Later queue — on any device.
+              and pick it up again from your Watch Later queue on your next visit.
             </p>
           </div>
 
@@ -104,9 +104,10 @@ export default function App() {
         </section>
 
         <WatchLater
-          videos={watchLater.videos}
+          videos={savedVideos}
           onRemove={watchLater.remove}
           onSaveAnnounce={handleAnnounce}
+          isDemoEmpty={demoMode === 'empty'}
         />
       </main>
 
