@@ -172,3 +172,39 @@ The project intentionally focuses on the Watch Later feature rather than reprodu
 This implementation places stronger emphasis on keyboard accessibility and explicit loading, error and empty states, making the feature easier to operate and understand when data is loading, unavailable or when no videos have been saved.
 
 This is a scope-specific improvement for this rebuilt feature, not a claim about the full YouTube platform.
+
+
+
+
+## Architecture
+
+The application is organized around a small set of React components, hooks, and utility modules:
+
+- `components/` — UI components such as the header, video cards, states, and Watch Later list.
+- `hooks/` — application behavior such as video loading, demo modes, and Watch Later state.
+- `data/` — bundled fallback video catalog.
+- `lib/` — API and localStorage utilities.
+- `App.jsx` — connects the main feature areas and application state.
+
+The main data flow is:
+
+Wikimedia Commons API
+→ `api.js`
+→ normalized video data
+→ `useVideos`
+→ `App`
+→ video discovery / Watch Later UI
+
+For saved videos:
+
+User action
+→ `useWatchLater`
+→ `storage.js`
+→ `localStorage` (`watch-later:v1`)
+
+When the external API cannot be used, the application can use the bundled fallback catalog. Reviewer-controlled demo modes provide predictable loading, error, and empty states.
+
+## Key Documentation
+
+- `DECISIONS.md` — records the three major technical decisions, alternatives considered, reasons, and trade-offs.
+- `README.md` — explains how to install, run, test, and understand the project.
