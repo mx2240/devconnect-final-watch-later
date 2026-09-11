@@ -12,9 +12,14 @@ export default function WatchLater({ videos, onRemove, onSaveAnnounce, isDemoEmp
     onSaveAnnounce(`Removed "${video.title}" from Watch Later.`)
 
     window.requestAnimationFrame(() => {
-      const nextButton = removeRefs.current[index] || removeRefs.current[index - 1]
-      if (nextButton) nextButton.focus()
-      else headingRef.current?.focus()
+      const buttons = removeRefs.current.filter(Boolean)
+      const nextButton = buttons[index] || buttons[index - 1]
+
+      if (nextButton) {
+        nextButton.focus()
+      } else {
+        headingRef.current?.focus()
+      }
     })
   }
 
