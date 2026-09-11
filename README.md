@@ -10,6 +10,40 @@ Rebuilt feature: Watch Later / Saved Videos
 
 Watch Later is a small but important product feature: users need to discover videos, save them quickly, understand what is already saved, and trust that the saved list survives refreshes. It is a good scope for demonstrating async data loading, persistence, failure states, responsive UI, and keyboard accessibility without rebuilding the full YouTube platform.
 
+
+
+## Architecture
+
+Later is a React/Vite frontend organized around reusable components, application hooks, data, and utility modules.
+
+### Main structure
+
+* `src/components/` — reusable interface components such as the header, video cards, Watch Later list, loading state, error state, and empty state.
+* `src/hooks/` — application behavior including video loading, demo modes, and Watch Later state management.
+* `src/data/` — bundled fallback video catalog used when the external data source is unavailable.
+* `src/lib/` — API and browser-storage utilities.
+* `App.jsx` — connects the main application features and state.
+
+### Data flow
+
+Video discovery follows this path:
+
+`Wikimedia Commons API → api.js → useVideos → App → VideoGrid`
+
+Saved videos follow this path:
+
+`User action → useWatchLater → storage.js → localStorage`
+
+The saved-video data uses the versioned storage key `watch-later:v1`.
+
+When the external API is unavailable, the application can use the bundled fallback catalog. Reviewer-controlled demo modes make the loading, error, empty, and normal states directly reproducible.
+
+### Key documentation
+
+* `README.md` — explains how to install, run, test, and understand the project.
+* `DECISIONS.md` — records the three major technical decisions, alternatives considered, reasons for choosing them, and their trade-offs.
+
+
 ## Install
 
 ```bash
@@ -176,35 +210,3 @@ This is a scope-specific improvement for this rebuilt feature, not a claim about
 
 
 
-## Architecture
-
-The application is organized around a small set of React components, hooks, and utility modules:
-
-- `components/` — UI components such as the header, video cards, states, and Watch Later list.
-- `hooks/` — application behavior such as video loading, demo modes, and Watch Later state.
-- `data/` — bundled fallback video catalog.
-- `lib/` — API and localStorage utilities.
-- `App.jsx` — connects the main feature areas and application state.
-
-The main data flow is:
-
-Wikimedia Commons API
-→ `api.js`
-→ normalized video data
-→ `useVideos`
-→ `App`
-→ video discovery / Watch Later UI
-
-For saved videos:
-
-User action
-→ `useWatchLater`
-→ `storage.js`
-→ `localStorage` (`watch-later:v1`)
-
-When the external API cannot be used, the application can use the bundled fallback catalog. Reviewer-controlled demo modes provide predictable loading, error, and empty states.
-
-## Key Documentation
-
-- `DECISIONS.md` — records the three major technical decisions, alternatives considered, reasons, and trade-offs.
-- `README.md` — explains how to install, run, test, and understand the project.
